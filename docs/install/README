@@ -1,0 +1,60 @@
+# Install CVAT-part
+
+After Docker 26.0 installation, install nuclio and deploy CVAT-part
+
+[comment]:#################################################################
+`nuclio` installation
+```sh
+sudo curl -sSL \
+  "https://github.com/nuclio/nuclio/releases/download/1.15.9/nuctl-1.15.9-linux-amd64" \
+  -o /usr/local/bin/nuctl
+
+sudo chmod +x /usr/local/bin/nuctl
+nuctl version
+```
+
+[comment]:#################################################################
+Create an admin user for CVAT:
+```sh
+docker exec -it cvat_server bash -ic \
+  "python manage.py createsuperuser"
+```
+
+[comment]:#################################################################
+Start CVAT with the serverless stack:
+```sh
+docker network create cvat 2>/dev/null || true
+
+docker compose \
+  -f docker-compose.yml \
+  -f components/serverless/docker-compose.serverless.yml \
+  up -d
+```
+
+
+[comment]:#################################################################
+Create nuctl project and deploy it:
+```sh
+nuctl create project cvat --platform local
+nuctl get projects --platform local
+
+nuctl deploy \
+  --project-name cvat \
+  --path serverless/pytorch/facebookresearch/sam/nuclio \
+  --platform local
+
+nuctl get functions --platform local
+```
+
+Finally, you can connect to http://localhost:8080 and enjoy the annotation task ;D
+
+Once you have finished all your annotation activiteies, you can stop all the containers
+```sh
+docker stop $(docker ps -a -q)
+```
+
+
+and remove all of them
+```sh
+docker rm $(docker ps -a -q)
+```
