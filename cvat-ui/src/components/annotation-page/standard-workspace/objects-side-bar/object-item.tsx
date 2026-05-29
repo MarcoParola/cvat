@@ -3,7 +3,7 @@
 //
 // SPDX-License-Identifier: MIT
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import Text from 'antd/lib/typography/Text';
 import Collapse from 'antd/lib/collapse';
 
@@ -13,6 +13,7 @@ import { ColorBy } from 'reducers';
 import { ObjectType, ShapeType } from 'cvat-core-wrapper';
 import ObjectItemElementComponent from './object-item-element';
 import ItemBasics from './object-item-basics';
+import SetParentModal from './set-parent-modal';
 
 interface Props {
     normalizedKeyMap: Record<string, string>;
@@ -30,6 +31,10 @@ interface Props {
     labels: any[];
     attributes: any[];
     jobInstance: any;
+    objectState: any;
+    states: any[];
+    parentID: number | null;
+    hierarchyLevel: number;
     activate(activeElementID?: number): void;
     focusAndExpand(): void;
     copy(): void;
@@ -84,7 +89,12 @@ function ObjectItemComponent(props: Props): JSX.Element {
         slice,
         simplify,
         jobInstance,
+        objectState,
+        states,
+        hierarchyLevel = 0,
     } = props;
+
+    const [setParentModalVisible, setSetParentModalVisible] = useState(false);
 
     const type =
         objectType === ObjectType.TAG ?
@@ -99,81 +109,105 @@ function ObjectItemComponent(props: Props): JSX.Element {
         activate();
     }, []);
 
+    const handleSetParent = useCallback(() => {
+        setSetParentModalVisible(true);
+    }, []);
+
+    const handleCloseModal = useCallback(() => {
+        setSetParentModalVisible(false);
+    }, []);
+
+    // Calculate left padding for hierarchical indentation (16px per level)
+    const indentationStyle = {
+        paddingLeft: `${hierarchyLevel * 16}px`,
+    };
+
     return (
-        <div style={{ display: 'flex', marginBottom: '1px' }}>
-            <div
-                onMouseEnter={activateState}
-                onDoubleClick={focusAndExpand}
-                id={`cvat-objects-sidebar-state-item-${clientID}`}
-                className={className}
-                style={{ '--state-item-background': `${color}` } as React.CSSProperties}
-            >
-                <ItemBasics
-                    jobInstance={jobInstance}
-                    serverID={serverID}
-                    clientID={clientID}
-                    labelID={labelID}
-                    labels={labels}
-                    shapeType={shapeType}
-                    objectType={objectType}
-                    color={color}
-                    colorBy={colorBy}
-                    type={type}
-                    locked={locked}
-                    isGroundTruth={isGroundTruth}
-                    copyShortcut={normalizedKeyMap.COPY_SHAPE}
-                    pasteShortcut={normalizedKeyMap.PASTE_SHAPE}
-                    propagateShortcut={normalizedKeyMap.PROPAGATE_OBJECT}
-                    toBackgroundShortcut={normalizedKeyMap.TO_BACKGROUND}
-                    toForegroundShortcut={normalizedKeyMap.TO_FOREGROUND}
-                    toOneLayerBackwardShortcut={normalizedKeyMap.TO_ONE_LAYER_BACKWARD}
-                    toOneLayerForwardShortcut={normalizedKeyMap.TO_ONE_LAYER_FORWARD}
-                    removeShortcut={normalizedKeyMap.DELETE_OBJECT_STANDARD_WORKSPACE}
-                    changeColorShortcut={normalizedKeyMap.CHANGE_OBJECT_COLOR}
-                    sliceShortcut={normalizedKeyMap.SWITCH_SLICE_MODE}
-                    runAnnotationsActionShortcut={normalizedKeyMap.RUN_ANNOTATIONS_ACTION}
-                    changeLabel={changeLabel}
-                    changeColor={changeColor}
-                    copy={copy}
-                    remove={remove}
-                    propagate={propagate}
-                    createURL={createURL}
-                    switchOrientation={switchOrientation}
-                    toBackground={toBackground}
-                    toForeground={toForeground}
-                    toOneLayerBackward={toOneLayerBackward}
-                    toOneLayerForward={toOneLayerForward}
-                    resetCuboidPerspective={resetCuboidPerspective}
-                    edit={edit}
-                    slice={slice}
-                    simplify={simplify}
-                    runAnnotationAction={runAnnotationAction}
-                />
-                <ObjectButtonsContainer clientID={clientID} />
-                <ItemDetailsContainer
-                    readonly={locked}
-                    clientID={clientID}
-                    parentID={null}
-                />
-                {!!elements.length && (
-                    <Collapse
-                        className='cvat-objects-sidebar-state-item-elements-collapse'
-                        items={[{
-                            key: 'elements',
-                            label: <Text style={{ fontSize: 10 }} type='secondary'>PARTS</Text>,
-                            children: elements.map((element: number) => (
-                                <ObjectItemElementComponent
-                                    key={element}
-                                    parentID={clientID}
-                                    clientID={element}
-                                    onMouseLeave={activateState}
-                                />
-                            )),
-                        }]}
+        <>
+            <div style={{ display: 'flex', marginBottom: '1px', ...indentationStyle }}>
+                <div
+                    onMouseEnter={activateState}
+                    onDoubleClick={focusAndExpand}
+                    id={`cvat-objects-sidebar-state-item-${clientID}`}
+                    className={className}
+                    style={{ '--state-item-background': `${color}` } as React.CSSProperties}
+                >
+                    <ItemBasics
+                        jobInstance={jobInstance}
+                        serverID={serverID}
+                        clientID={clientID}
+                        labelID={labelID}
+                        labels={labels}
+                        shapeType={shapeType}
+                        objectType={objectType}
+                        color={color}
+                        colorBy={colorBy}
+                        type={type}
+                        locked={locked}
+                        isGroundTruth={isGroundTruth}
+                        copyShortcut={normalizedKeyMap.COPY_SHAPE}
+                        pasteShortcut={normalizedKeyMap.PASTE_SHAPE}
+                        propagateShortcut={normalizedKeyMap.PROPAGATE_OBJECT}
+                        toBackgroundShortcut={normalizedKeyMap.TO_BACKGROUND}
+                        toForegroundShortcut={normalizedKeyMap.TO_FOREGROUND}
+                        toOneLayerBackwardShortcut={normalizedKeyMap.TO_ONE_LAYER_BACKWARD}
+                        toOneLayerForwardShortcut={normalizedKeyMap.TO_ONE_LAYER_FORWARD}
+                        removeShortcut={normalizedKeyMap.DELETE_OBJECT_STANDARD_WORKSPACE}
+                        changeColorShortcut={normalizedKeyMap.CHANGE_OBJECT_COLOR}
+                        sliceShortcut={normalizedKeyMap.SWITCH_SLICE_MODE}
+                        runAnnotationsActionShortcut={normalizedKeyMap.RUN_ANNOTATIONS_ACTION}
+                        changeLabel={changeLabel}
+                        changeColor={changeColor}
+                        copy={copy}
+                        remove={remove}
+                        propagate={propagate}
+                        createURL={createURL}
+                        switchOrientation={switchOrientation}
+                        toBackground={toBackground}
+                        toForeground={toForeground}
+                        toOneLayerBackward={toOneLayerBackward}
+                        toOneLayerForward={toOneLayerForward}
+                        resetCuboidPerspective={resetCuboidPerspective}
+                        edit={edit}
+                        slice={slice}
+                        simplify={simplify}
+                        runAnnotationAction={runAnnotationAction}
+                        setParent={handleSetParent}
                     />
-                )}
+                    <ObjectButtonsContainer clientID={clientID} />
+                    <ItemDetailsContainer
+                        readonly={locked}
+                        clientID={clientID}
+                        parentID={null}
+                    />
+                    {!!elements.length && (
+                        <Collapse
+                            className='cvat-objects-sidebar-state-item-elements-collapse'
+                            items={[{
+                                key: 'elements',
+                                label: <Text style={{ fontSize: 10 }} type='secondary'>PARTS</Text>,
+                                children: elements.map((element: number) => (
+                                    <ObjectItemElementComponent
+                                        key={element}
+                                        parentID={clientID}
+                                        clientID={element}
+                                        onMouseLeave={activateState}
+                                    />
+                                )),
+                            }]}
+                        />
+                    )}
+                </div>
             </div>
-        </div>
+            {objectState && states && (
+                <SetParentModal
+                    objectState={objectState}
+                    visible={setParentModalVisible}
+                    onClose={handleCloseModal}
+                    states={states}
+                />
+            )}
+        </>
     );
 }
 

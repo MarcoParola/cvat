@@ -64,6 +64,8 @@ interface StateToProps {
         objectState: ObjectState | null;
         originalPoints: number[] | null;
     };
+    hierarchyLevel: number;
+    states: ObjectState[];
 }
 
 interface DispatchToProps {
@@ -104,6 +106,34 @@ function mapStateToProps(state: CombinedState, own: OwnProps): StateToProps {
     const stateIDs = states.map((_state: any): number => _state.clientID);
     const index = stateIDs.indexOf(clientID);
 
+    // Calculate hierarchy level by traversing parent chain
+    const calculateHierarchyLevel = (objectState: ObjectState, allStates: ObjectState[]): number => {
+        let level = 0;
+        let currentState = objectState;
+        const visitedIDs = new Set<number>();
+
+        while (currentState.parentID !== null) {
+            if (visitedIDs.has(currentState.parentID)) {
+                // Circular reference detected, break to avoid infinite loop
+                break;
+            }
+            visitedIDs.add(currentState.parentID);
+
+            const parentState = allStates.find((s) => s.clientID === currentState.parentID);
+            if (parentState) {
+                level++;
+                currentState = parentState;
+            } else {
+                break;
+            }
+        }
+
+        return level;
+    };
+
+    const objectState = states[index];
+    const hierarchyLevel = calculateHierarchyLevel(objectState, states);
+
     return {
         objectState: states[index],
         attributes: jobAttributes[states[index].label.id as number],
@@ -122,6 +152,8 @@ function mapStateToProps(state: CombinedState, own: OwnProps): StateToProps {
         focusedObjectPadding,
         defaultApproxPolyAccuracy,
         simplifyState,
+        hierarchyLevel,
+        states,
     };
 }
 
@@ -569,6 +601,8 @@ class ObjectItemContainer extends React.PureComponent<Props, State> {
             keyMap,
             jobInstance,
             visibleSkeletonElements = {},
+            hierarchyLevel,
+            states,
         } = this.props;
         const elements = visibleSkeletonElements[objectState.clientID as number] ??
             objectState.elements.map((el: ObjectState) => el.clientID as number);
@@ -609,6 +643,10 @@ class ObjectItemContainer extends React.PureComponent<Props, State> {
                     simplify={this.requestSimplification}
                     resetCuboidPerspective={this.resetCuboidPerspective}
                     runAnnotationAction={this.runAnnotationAction}
+                    objectState={objectState}
+                    states={states}
+                    parentID={objectState.parentID}
+                    hierarchyLevel={hierarchyLevel}
                 />
                 {simplifyMode && (
                     <PolySimplifyControl

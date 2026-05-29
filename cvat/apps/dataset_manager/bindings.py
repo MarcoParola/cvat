@@ -262,6 +262,7 @@ class CommonData(InstanceLabelData):
         outside: bool = False
         id: int | None = None
         score: float = 1.0
+        parent: int | None = None
 
     class TrackedShape(NamedTuple):
         type: int
@@ -287,6 +288,7 @@ class CommonData(InstanceLabelData):
         shapes: Sequence[CommonData.TrackedShape]
         elements: Sequence[int] = ()
         id: int | None = None
+        parent: int | None = None
 
     class Tag(NamedTuple):
         frame: int

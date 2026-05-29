@@ -4003,7 +4003,7 @@ class SubLabeledShapeSerializer(
     AttributedAnnotationSerializer,
     ScoredAnnotationSerializer,
 ):
-    pass
+    parent_id = serializers.IntegerField(default=None, allow_null=True, required=False)
 
 
 class LabeledShapeSerializer(SubLabeledShapeSerializer):
@@ -4075,9 +4075,12 @@ class LabeledShapeSerializerFromDB(serializers.BaseSerializer):
                     "z_order",
                     "rotation",
                     "points",
+                    "parent",
                 ],
             )
             result["attributes"] = _convert_attributes(shape["attributes"])
+            # Only include elements for skeleton shapes (parent is for skeleton elements)
+            # For hierarchical annotations, parent field is used directly
             if shape.get("elements", None) is not None and shape["parent"] is None:
                 result["elements"] = [convert_shape(element) for element in shape["elements"]]
             return result
@@ -4101,11 +4104,13 @@ class LabeledTrackSerializerFromDB(serializers.BaseSerializer):
                 "points",
                 "attributes",
             ]
-            result = _convert_annotation(track, ["id", "label_id", "frame", "group", "source"])
+            result = _convert_annotation(track, ["id", "label_id", "frame", "group", "source", "parent"])
             result["shapes"] = [_convert_annotation(shape, shape_keys) for shape in track["shapes"]]
             result["attributes"] = _convert_attributes(track["attributes"])
             for shape in result["shapes"]:
                 shape["attributes"] = _convert_attributes(shape["attributes"])
+            # Only include elements for skeleton tracks (parent is for skeleton elements)
+            # For hierarchical annotations, parent field is used directly
             if track.get("elements", None) is not None and track["parent"] is None:
                 result["elements"] = [convert_track(element) for element in track["elements"]]
             return result
@@ -4144,6 +4149,7 @@ class TrackedShapeSerializer(ShapeSerializer, AttributedAnnotationSerializer):
 class SubLabeledTrackSerializer(
     AnnotationSerializer, FrameAnnotationSerializer, AttributedAnnotationSerializer
 ):
+    parent_id = serializers.IntegerField(default=None, allow_null=True, required=False)
     shapes = TrackedShapeSerializer(many=True, allow_empty=True)
 
 

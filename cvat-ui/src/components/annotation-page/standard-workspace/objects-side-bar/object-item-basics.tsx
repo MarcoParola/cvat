@@ -56,6 +56,7 @@ interface Props {
     edit(): void;
     slice(): void;
     simplify(): void;
+    setParent(): void;
 }
 
 function ItemTopComponent(props: Props): JSX.Element {
@@ -98,6 +99,7 @@ function ItemTopComponent(props: Props): JSX.Element {
         edit,
         slice,
         simplify,
+        setParent,
         jobInstance,
     } = props;
 
@@ -185,6 +187,7 @@ function ItemTopComponent(props: Props): JSX.Element {
                             slice,
                             simplify,
                             runAnnotationAction,
+                            setParent,
                         })}
                     >
                         <Col span={2}>

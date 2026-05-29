@@ -56,6 +56,7 @@ interface Props {
     slice(): void;
     simplify(): void;
     runAnnotationAction(): void;
+    setParent(): void;
     jobInstance: Job;
 }
 
@@ -161,6 +162,21 @@ function PropagateItem(props: ItemProps): JSX.Element {
                 Propagate
             </Button>
         </CVATTooltip>
+    );
+}
+
+function SetParentItem(props: ItemProps): JSX.Element {
+    const { toolProps } = props;
+    const { setParent } = toolProps;
+    return (
+        <Button
+            type='link'
+            icon={<LinkOutlined />}
+            onClick={setParent}
+            className='cvat-object-item-menu-set-parent'
+        >
+            Set parent
+        </Button>
     );
 }
 
@@ -319,6 +335,7 @@ export default function ItemMenu(props: Props): MenuProps {
         CREATE_URL = 'create_url',
         COPY = 'copy',
         PROPAGATE = 'propagate',
+        SET_PARENT = 'set_parent',
         SWITCH_ORIENTATION = 'switch_orientation',
         RESET_PERSPECTIVE = 'reset_perspective',
         TO_BACKGROUND = 'to_background',
@@ -377,6 +394,11 @@ export default function ItemMenu(props: Props): MenuProps {
     items.push({
         key: MenuKeys.PROPAGATE,
         label: <PropagateItem toolProps={props} />,
+    });
+
+    items.push({
+        key: MenuKeys.SET_PARENT,
+        label: <SetParentItem toolProps={props} />,
     });
 
     if (is2D && !locked && [ShapeType.POLYGON, ShapeType.POLYLINE, ShapeType.CUBOID].includes(shapeType)) {
