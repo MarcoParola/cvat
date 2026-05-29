@@ -132,7 +132,7 @@ class Annotation {
         this.groupColors = injection.groupColors;
         this.clientID = clientID;
         this.serverID = data.id || null;
-        this.parentID = injection.parentID || null;
+        this.parentID = data.parent_id ?? injection.parentID ?? null;
         this.dimension = injection.dimension;
         this.group = data.group;
         this.label = this.taskLabels[data.label_id];
@@ -222,6 +222,27 @@ class Annotation {
         );
 
         this.color = color;
+    }
+
+    protected saveParentID(parentID: number | null, frame: number): void {
+        const undoParentID = this.parentID;
+        const redoParentID = parentID;
+
+        this.history.do(
+            HistoryActions.CHANGED_LOCK, // reuse existing action type
+            () => {
+                this.parentID = undoParentID;
+                this.updated = Date.now();
+            },
+            () => {
+                this.parentID = redoParentID;
+                this.updated = Date.now();
+            },
+            [this.clientID],
+            frame,
+        );
+
+        this.parentID = parentID;
     }
 
     protected saveLabel(label: Label, frame: number): void {
@@ -596,6 +617,11 @@ export class Shape extends Drawn {
         }
 
         if (this.parentID !== null) {
+            // Only include parent_id for hierarchical annotations, not skeleton elements
+            // Skeleton elements have readOnlyFields including 'group'
+            if (!this.readOnlyFields.includes('group')) {
+                result.parent_id = this.parentID;
+            }
             return omit(result, 'elements');
         }
 
@@ -834,6 +860,10 @@ export class Shape extends Drawn {
 
         if (updated.hidden) {
             this.saveHidden(data.hidden, frame);
+        }
+
+        if (updated.parentID) {
+            this.saveParentID(data.parentID, frame);
         }
 
         this.updateTimestamp(updated);
@@ -1416,6 +1446,10 @@ export class Track extends Drawn {
 
         if (updated.keyframe) {
             this.saveKeyframe(frame, data.keyframe);
+        }
+
+        if (updated.parentID) {
+            this.saveParentID(data.parentID, frame);
         }
 
         this.updateTimestamp(updated);

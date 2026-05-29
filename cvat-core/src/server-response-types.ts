@@ -427,6 +427,7 @@ export interface SerializedShape {
     frame: number;
     source: Source;
     score?: number;
+    parent_id?: number | null;
     attributes: { spec_id: number; value: string }[];
     elements: Omit<SerializedShape, 'elements'>[];
     occluded: boolean;

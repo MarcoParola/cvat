@@ -25,6 +25,7 @@ interface UpdateFlags {
     color: boolean;
     hidden: boolean;
     descriptions: boolean;
+    parentID: boolean;
     reset: () => void;
 }
 
@@ -146,6 +147,7 @@ export default class ObjectState {
                 this.color = false;
                 this.hidden = false;
                 this.descriptions = false;
+                this.parentID = false;
 
                 return reset;
             },
@@ -225,6 +227,10 @@ export default class ObjectState {
                 },
                 parentID: {
                     get: () => data.parentID,
+                    set: (parentID) => {
+                        data.updateFlags.parentID = true;
+                        data.parentID = parentID;
+                    },
                 },
                 label: {
                     get: () => data.label,

@@ -119,7 +119,7 @@ function mapStateToProps(state: CombinedState, own: OwnProps): StateToProps {
             }
             visitedIDs.add(currentState.parentID);
 
-            const parentState = allStates.find((s) => s.clientID === currentState.parentID);
+            const parentState = allStates.find((s) => s.serverID === currentState.parentID);
             if (parentState) {
                 level++;
                 currentState = parentState;
@@ -647,6 +647,7 @@ class ObjectItemContainer extends React.PureComponent<Props, State> {
                     states={states}
                     parentID={objectState.parentID}
                     hierarchyLevel={hierarchyLevel}
+                    updateState={this.commit.bind(this)}
                 />
                 {simplifyMode && (
                     <PolySimplifyControl

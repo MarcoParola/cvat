@@ -311,6 +311,43 @@ function mapDispatchToProps(dispatch: any): DispatchToProps {
     };
 }
 
+function buildHierarchicalOrder(sorted: ObjectState[]): ObjectState[] {
+    // Build a map of serverID -> state for quick lookup (parentID stores serverID)
+    const serverIDMap = new Map<number, ObjectState>();
+    sorted.forEach((state) => {
+        if (state.serverID !== null) {
+            serverIDMap.set(state.serverID, state);
+        }
+    });
+
+    // Build children map: parentServerID -> [childStates]
+    const childrenMap = new Map<number, ObjectState[]>();
+    const topLevel: ObjectState[] = [];
+
+    sorted.forEach((state) => {
+        if (state.parentID !== null && state.parentID !== undefined && serverIDMap.has(state.parentID)) {
+            if (!childrenMap.has(state.parentID)) {
+                childrenMap.set(state.parentID, []);
+            }
+            childrenMap.get(state.parentID)!.push(state);
+        } else {
+            topLevel.push(state);
+        }
+    });
+
+    // Recursively insert children after their parent (DFS)
+    const result: ObjectState[] = [];
+    function insertWithChildren(state: ObjectState): void {
+        result.push(state);
+        const children = childrenMap.get(state.serverID!) || [];
+        children.forEach((child) => insertWithChildren(child));
+    }
+
+    topLevel.forEach((state) => insertWithChildren(state));
+
+    return result;
+}
+
 function sortAndMap(objectStates: ObjectState[], ordering: StatesOrdering): number[] {
     let sorted: ObjectState[] = [];
     if (ordering === StatesOrdering.ID_ASCENT) {
@@ -337,7 +374,10 @@ function sortAndMap(objectStates: ObjectState[], ordering: StatesOrdering): numb
         sorted = [...objectStates];
     }
 
-    return sorted.map((state: ObjectState) => state.clientID).filter((id): id is number => id !== null);
+    // Apply hierarchical ordering: children appear right after their parents
+    const hierarchical = buildHierarchicalOrder(sorted);
+
+    return hierarchical.map((state: ObjectState) => state.clientID).filter((id): id is number => id !== null);
 }
 
 type Props = StateToProps & DispatchToProps;

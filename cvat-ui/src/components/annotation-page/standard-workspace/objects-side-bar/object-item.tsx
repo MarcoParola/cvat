@@ -53,6 +53,7 @@ interface Props {
     edit(): void;
     slice(): void;
     simplify(): void;
+    updateState(objectState: any): void;
 }
 
 function ObjectItemComponent(props: Props): JSX.Element {
@@ -92,6 +93,7 @@ function ObjectItemComponent(props: Props): JSX.Element {
         objectState,
         states,
         hierarchyLevel = 0,
+        updateState,
     } = props;
 
     const [setParentModalVisible, setSetParentModalVisible] = useState(false);
@@ -205,6 +207,8 @@ function ObjectItemComponent(props: Props): JSX.Element {
                     visible={setParentModalVisible}
                     onClose={handleCloseModal}
                     states={states}
+                    updateObjectState={updateState}
+                    jobInstance={jobInstance}
                 />
             )}
         </>
