@@ -22,33 +22,45 @@ function SetParentModal(props: Props): JSX.Element {
         objectState, visible, onClose, states, updateObjectState,
     } = props;
 
-    // parentID is stored as serverID for persistence
-    const [selectedParentServerID, setSelectedParentServerID] = useState<number | null>(objectState.parentID);
+    // Use clientID for in-session selection; resolve to serverID for persistence
+    const [selectedParentClientID, setSelectedParentClientID] = useState<number | null>(null);
     const [validParents, setValidParents] = useState<ObjectState[]>([]);
 
     useEffect(() => {
         if (visible) {
             const currentFrame = objectState.frame;
-            const currentServerID = objectState.serverID;
+
+            // Resolve current parentID (serverID) back to clientID for display
+            let currentParentClientID: number | null = null;
+            if (objectState.parentID !== null) {
+                // parentID stores serverID; find the matching state
+                const parentState = states.find(
+                    (s: ObjectState) => s.serverID === objectState.parentID,
+                );
+                currentParentClientID = parentState ? parentState.clientID : null;
+            }
 
             // Function to check if a candidate would create a circular reference
-            // Uses serverID for parent matching (since parentID stores serverID)
-            const wouldCreateCircularRef = (candidateServerID: number | null): boolean => {
-                if (candidateServerID === null) return false;
-                if (candidateServerID === currentServerID) return true;
+            const wouldCreateCircularRef = (candidateClientID: number): boolean => {
+                if (candidateClientID === objectState.clientID) return true;
 
-                let currentParent = states.find((s: ObjectState) => s.serverID === candidateServerID);
-                const visitedIDs = new Set<number>([candidateServerID]);
+                let current = states.find((s: ObjectState) => s.clientID === candidateClientID);
+                const visitedIDs = new Set<number>([candidateClientID]);
 
-                while (currentParent && currentParent.parentID !== null) {
-                    if (currentParent.parentID === currentServerID) {
+                while (current && current.parentID !== null) {
+                    // parentID stores serverID, find matching state
+                    const parentState = states.find(
+                        (s: ObjectState) => s.serverID === current?.parentID,
+                    );
+                    if (!parentState) break;
+                    if (parentState.clientID === objectState.clientID) {
                         return true; // circular reference detected
                     }
-                    if (visitedIDs.has(currentParent.parentID)) {
+                    if (visitedIDs.has(parentState.clientID)) {
                         return true; // already visited, circular ref
                     }
-                    visitedIDs.add(currentParent.parentID);
-                    currentParent = states.find((s: ObjectState) => s.serverID === currentParent?.parentID);
+                    visitedIDs.add(parentState.clientID);
+                    current = parentState;
                 }
 
                 return false;
@@ -58,38 +70,54 @@ function SetParentModal(props: Props): JSX.Element {
             // 1. Are on the same frame
             // 2. Are not the current object itself
             // 3. Would not create circular references
-            // 4. Have a serverID (must be saved before becoming a parent)
-            // 5. Are same object type
+            // 4. Are same object type
+            // NOTE: No serverID filter - all annotations are shown immediately
             const candidates = states.filter((state: ObjectState) =>
                 state.frame === currentFrame &&
                 state.clientID !== objectState.clientID &&
-                state.serverID !== null &&
-                !wouldCreateCircularRef(state.serverID) &&
+                !wouldCreateCircularRef(state.clientID) &&
                 state.objectType === objectState.objectType,
             );
 
             setValidParents(candidates);
-            setSelectedParentServerID(objectState.parentID);
+            setSelectedParentClientID(currentParentClientID);
         }
     }, [visible, objectState, states]);
 
     const handleOk = async (): Promise<void> => {
         try {
-            // Set parentID to the serverID of the selected parent
-            objectState.parentID = selectedParentServerID;
+            if (selectedParentClientID !== null) {
+                // Find the selected parent and resolve clientID → serverID
+                const parentState = states.find(
+                    (s: ObjectState) => s.clientID === selectedParentClientID,
+                );
+                if (parentState && parentState.serverID !== null) {
+                    objectState.parentID = parentState.serverID;
+                } else {
+                    // Parent not saved yet - warn user
+                    notification.warning({
+                        message: 'Parent not saved yet',
+                        description: 'Please save annotations first (Ctrl+S), then set the parent.',
+                    });
+                    return;
+                }
+            } else {
+                // Clear parent
+                objectState.parentID = null;
+            }
 
             // Save the changes through Redux update
             await updateObjectState(objectState);
 
-            const parentLabel = selectedParentServerID !== null
-                ? states.find((s: ObjectState) => s.serverID === selectedParentServerID)
+            const parentLabel = selectedParentClientID !== null
+                ? states.find((s: ObjectState) => s.clientID === selectedParentClientID)
                 : null;
 
             notification.success({
                 message: 'Parent relationship updated',
-                description: selectedParentServerID === null
+                description: selectedParentClientID === null
                     ? 'Parent relationship removed'
-                    : `Parent set to ${parentLabel ? parentLabel.label.name : ''} (ID: ${selectedParentServerID})`,
+                    : `Parent set to ${parentLabel ? parentLabel.label.name : ''} (#${selectedParentClientID})`,
                 className: 'cvat-notification-set-parent-success',
             });
 
@@ -104,7 +132,6 @@ function SetParentModal(props: Props): JSX.Element {
     };
 
     const handleCancel = (): void => {
-        setSelectedParentServerID(objectState.parentID);
         onClose();
     };
 
@@ -126,8 +153,8 @@ function SetParentModal(props: Props): JSX.Element {
                     showSearch
                     style={{ width: '100%' }}
                     placeholder='Select parent object (or none for top-level)'
-                    value={selectedParentServerID}
-                    onChange={setSelectedParentServerID}
+                    value={selectedParentClientID}
+                    onChange={setSelectedParentClientID}
                     allowClear
                     className='cvat-set-parent-select'
                     filterOption={(input: string, option: any) =>
@@ -138,8 +165,9 @@ function SetParentModal(props: Props): JSX.Element {
                         <span style={{ fontStyle: 'italic' }}>None (top-level object)</span>
                     </Select.Option>
                     {validParents.map((state: ObjectState) => (
-                        <Select.Option value={state.serverID} key={state.serverID}>
-                            #{state.clientID} - {state.label.name} (ID: {state.serverID})
+                        <Select.Option value={state.clientID} key={state.clientID}>
+                            #{state.clientID} - {state.label.name}
+                            {state.serverID !== null ? ` (saved)` : ` (unsaved)`}
                         </Select.Option>
                     ))}
                 </Select>
