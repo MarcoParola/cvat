@@ -4078,10 +4078,12 @@ class LabeledShapeSerializerFromDB(serializers.BaseSerializer):
                     "parent",
                 ],
             )
+            # Rename 'parent' to 'parent_id' for API consistency with frontend
+            result["parent_id"] = result.pop("parent", None)
             result["attributes"] = _convert_attributes(shape["attributes"])
             # Only include elements for skeleton shapes (parent is for skeleton elements)
             # For hierarchical annotations, parent field is used directly
-            if shape.get("elements", None) is not None and shape["parent"] is None:
+            if shape.get("elements", None) is not None and shape.get("parent") is None:
                 result["elements"] = [convert_shape(element) for element in shape["elements"]]
             return result
 
@@ -4105,13 +4107,15 @@ class LabeledTrackSerializerFromDB(serializers.BaseSerializer):
                 "attributes",
             ]
             result = _convert_annotation(track, ["id", "label_id", "frame", "group", "source", "parent"])
+            # Rename 'parent' to 'parent_id' for API consistency with frontend
+            result["parent_id"] = result.pop("parent", None)
             result["shapes"] = [_convert_annotation(shape, shape_keys) for shape in track["shapes"]]
             result["attributes"] = _convert_attributes(track["attributes"])
             for shape in result["shapes"]:
                 shape["attributes"] = _convert_attributes(shape["attributes"])
             # Only include elements for skeleton tracks (parent is for skeleton elements)
             # For hierarchical annotations, parent field is used directly
-            if track.get("elements", None) is not None and track["parent"] is None:
+            if track.get("elements", None) is not None and track.get("parent") is None:
                 result["elements"] = [convert_track(element) for element in track["elements"]]
             return result
 

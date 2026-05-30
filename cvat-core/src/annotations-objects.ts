@@ -132,7 +132,9 @@ class Annotation {
         this.groupColors = injection.groupColors;
         this.clientID = clientID;
         this.serverID = data.id || null;
-        this.parentID = data.parent_id ?? injection.parentID ?? null;
+        // For skeleton elements, injection.parentID (client ID) takes priority.
+        // For hierarchical annotations, data.parent_id (server ID) is used.
+        this.parentID = injection.parentID ?? data.parent_id ?? null;
         this.dimension = injection.dimension;
         this.group = data.group;
         this.label = this.taskLabels[data.label_id];

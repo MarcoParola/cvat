@@ -416,9 +416,15 @@ class JobAnnotation:
             for shape in shapes:
                 attributes = shape.pop("attributes", [])
                 shape_elements = shape.pop("elements", [])
+                # Extract hierarchy parent_id before constructing model
+                # (to avoid conflict with parent=parent_shape for skeleton elements)
+                hierarchy_parent_id = shape.pop("parent_id", None)
                 # FIXME: need to clamp points (be sure that all of them inside the image)
                 # Should we check here or implement a validator?
                 db_shape = models.LabeledShape(job=self.db_job, parent=parent_shape, **shape)
+                # For hierarchical annotations (non-skeleton), set parent_id directly
+                if hierarchy_parent_id is not None and parent_shape is None:
+                    db_shape.parent_id = hierarchy_parent_id
 
                 self._validate_label_for_existence(db_shape.label_id)
 
@@ -785,9 +791,19 @@ class JobAnnotation:
                     db_shape.elements = []
                     shapes[db_shape.id] = db_shape
                 else:
-                    if db_shape.parent not in elements:
-                        elements[db_shape.parent] = []
-                    elements[db_shape.parent].append(db_shape)
+                    # Check if parent is a skeleton shape - only skeleton elements
+                    # should be nested. Hierarchical annotations keep parent ref
+                    # but are treated as standalone shapes.
+                    parent_shape = shapes.get(db_shape.parent)
+                    if parent_shape and parent_shape["type"] == str(models.ShapeType.SKELETON):
+                        # This is a skeleton element
+                        if db_shape.parent not in elements:
+                            elements[db_shape.parent] = []
+                        elements[db_shape.parent].append(db_shape)
+                    else:
+                        # This is a hierarchical annotation (not a skeleton element)
+                        db_shape.elements = []
+                        shapes[db_shape.id] = db_shape
 
             yield from yield_shapes_for_one_frame(shapes, elements)
 
@@ -884,9 +900,19 @@ class JobAnnotation:
                 db_track.elements = []
                 tracks[db_track.id] = db_track
             else:
-                if db_track.parent not in elements:
-                    elements[db_track.parent] = []
-                elements[db_track.parent].append(db_track)
+                # Check if parent is a skeleton track - only skeleton elements
+                # should be nested. Hierarchical annotations keep parent ref
+                # but are treated as standalone tracks.
+                parent_track = tracks.get(db_track.parent)
+                if parent_track and parent_track["shapes"] and parent_track["shapes"][0]["type"] == str(models.ShapeType.SKELETON):
+                    # This is a skeleton element
+                    if db_track.parent not in elements:
+                        elements[db_track.parent] = []
+                    elements[db_track.parent].append(db_track)
+                else:
+                    # This is a hierarchical annotation (not a skeleton element)
+                    db_track.elements = []
+                    tracks[db_track.id] = db_track
 
         for track_id, track_elements in elements.items():
             tracks[track_id].elements = track_elements

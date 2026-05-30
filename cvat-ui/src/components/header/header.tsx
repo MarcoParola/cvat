@@ -426,7 +426,7 @@ function HeaderComponent(props: Props): JSX.Element {
                         history.push('/tasks');
                     }}
                 >
-                    Tesks
+                    Tasks
                 </Button>
                 <Button
                     className={getButtonClassName('jobs')}
