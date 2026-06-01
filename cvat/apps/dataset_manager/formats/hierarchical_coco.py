@@ -143,8 +143,11 @@ def _cvat_shape_to_coco_annotation(shape, annotation_id, image_id, label_name_ma
     label_id = shape.get("label_id", 0)
     label_name = label_name_map.get(label_id, str(label_id))
 
+    # Use the CVAT shape ID as the annotation id so parent_id references match
+    cvat_shape_id = shape.get("id", annotation_id)
+
     annotation = {
-        "id": annotation_id,
+        "id": cvat_shape_id,
         "image_id": image_id,
         "category_id": label_id,
         "category_name": label_name,
@@ -153,7 +156,6 @@ def _cvat_shape_to_coco_annotation(shape, annotation_id, image_id, label_name_ma
         "area": round(area, 2),
         "iscrowd": 0,
         "parent_id": parent_id,
-        "cvat_id": shape.get("id"),
         "shape_type": shape_type,
         "occluded": occluded,
         "rotation": rotation,
@@ -174,23 +176,21 @@ def _export_hierarchical_coco(dst_file, temp_dir, instance_data, save_images=Fal
     This is a standard COCO JSON with an additional `parent_id` field
     per annotation to represent hierarchical relationships.
     """
-    # Build label mapping: label_id -> label name
+    # Build label mapping from _label_mapping (label_id -> db_label)
     label_name_map = {}
     categories = []
 
-    for db_label in instance_data.meta[instance_data.META_FIELD]["labels"]:
-        label = db_label[1]
-        label_id = int(label.get("label_id", 0))
-        label_name_map[label_id] = label["name"]
+    for label_id, db_label in instance_data._label_mapping.items():
+        label_name_map[label_id] = db_label.name
         cat = {
             "id": label_id,
-            "name": label["name"],
-            "supercategory": "none",
+            "name": db_label.name,
+            "supercategory": db_label.parent.name if db_label.parent else "none",
         }
-        if label.get("color"):
-            cat["color"] = label["color"]
-        if label.get("type"):
-            cat["type"] = label["type"]
+        if db_label.color:
+            cat["color"] = db_label.color
+        if db_label.type:
+            cat["type"] = db_label.type
         categories.append(cat)
 
     # Collect all shapes from the IR data (streaming-safe: iterate once)
