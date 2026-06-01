@@ -136,6 +136,7 @@ import cvat.apps.dataset_manager.formats.audio_tsv
 import cvat.apps.dataset_manager.formats.camvid
 import cvat.apps.dataset_manager.formats.cityscapes
 import cvat.apps.dataset_manager.formats.coco
+import cvat.apps.dataset_manager.formats.hierarchical_coco
 import cvat.apps.dataset_manager.formats.cvat
 import cvat.apps.dataset_manager.formats.datumaro
 import cvat.apps.dataset_manager.formats.icdar

@@ -1,6 +1,6 @@
 # Install Docker
 
-Install Docker 26.0 from `apt`. Note: we can not ensure that CVAT-part runs on Docker from `snap`.
+Install Docker 26.0 from `apt`. Note: we can not ensure that HCVAT runs on Docker from `snap`.
 ```sh
 sudo apt-get update
 sudo apt-get install -y ca-certificates curl gnupg
@@ -31,4 +31,27 @@ newgrp docker
 
 docker --version        # Should show 26.0.0
 docker compose version  # Should show v2.x
+```
+
+```
+# Create the group if it doesn't exist
+sudo groupadd docker
+# Add your current user to the docker group
+sudo usermod -aG docker $USER
+```
+
+```
+# Unmask and enable containerd
+sudo systemctl unmask containerd
+sudo systemctl enable --now containerd
+# Enable and start Docker
+sudo systemctl enable --now docker
+```
+
+```
+sudo systemctl status docker
+```
+
+```
+newgrp docker
 ```

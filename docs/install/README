@@ -1,6 +1,6 @@
-# Install CVAT-part
+# Install HCVAT
 
-After Docker 26.0 installation, install nuclio and deploy CVAT-part
+After Docker 26.0 installation, install nuclio and deploy HCVAT
 
 [comment]:#################################################################
 `nuclio` installation
