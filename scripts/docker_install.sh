@@ -30,10 +30,27 @@ sudo apt-mark hold docker-ce docker-ce-cli
 sudo groupadd -f docker
 sudo usermod -aG docker "$USER"
 
-echo "Enabling containerd and docker services..."
-sudo systemctl unmask containerd || true
-sudo systemctl enable --now containerd
-sudo systemctl enable --now docker
+service_exists() {
+  systemctl list-unit-files --type=service "$1" --no-legend 2>/dev/null | awk '{print $1}' | grep -qx "$1"
+}
+
+echo "Enabling Docker services..."
+sudo systemctl daemon-reload || true
+
+if service_exists containerd.service; then
+  sudo systemctl unmask containerd.service || true
+  sudo systemctl enable --now containerd.service
+else
+  echo "containerd.service was not found; skipping separate containerd enable."
+fi
+
+if service_exists docker.service; then
+  sudo systemctl unmask docker.service || true
+  sudo systemctl enable --now docker.service
+else
+  echo "docker.service was not found after package installation." >&2
+  exit 1
+fi
 
 echo "Installation finished."
 echo "Run 'newgrp docker' now (or log out/in) to apply the docker group membership changes."
@@ -41,4 +58,4 @@ echo "This avoids needing sudo for docker commands in a new shell."
 docker --version || true
 docker compose version || true
 
-echo "If Docker is not active, try: sudo systemctl enable --now docker"
+echo "If Docker is not active, try: sudo systemctl enable --now docker.service"
