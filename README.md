@@ -1,20 +1,34 @@
 # HCVAT
 
-Hierarchical Computer Vision Annotation Tool (HCVAT) is an extension of the original [CVAT annotation](https://github.com/cvat-ai/cvat) tool supporting hierarchical annotaitons.
-It requires:
-* Docker 26.0
-* An NVIDIA gpu
+Hierarchical Computer Vision Annotation Tool (HCVAT) is an extension of the original CVAT annotation tool supporting hierarchical annotations.
 
-## Install Docker 26.0
-It runs on Ubuntu (tested on Ubuntu 24). HCVAT requires **Docker** 26.*.
-Instructions for docker installations and CVAT deployment are available [here](./docs/install/docker_install.md). If you already have a different version installed, we recommend to first uninstall the current instance using following [this guide](./docs/install/docker_remove.md) and, then, proceed with the installation of Docker 26.
+## Quick start
 
-## Setup and deploy HCVAT
-Once the right Docker version has been installed, follow [this instructions](./docs/install/docker_install.md) to setup and deploy HCVAT locally.
+This project is tested on Ubuntu 24 with Docker 26 and an NVIDIA GPU.
 
-## Annotate with HCVAT
-After deployed, HCVAT supports the hierarchical annotations process using SAM. Details about how import predefined labels and proceed with the annotation task can be found [here](./docs/annotate/README).
+1. Install Docker:
+   ```sh
+   ./scripts/docker_install.sh
+   ```
+   After the script finishes, run:
+   ```sh
+   newgrp docker
+   ```
+   This makes the current shell use the Docker group so you can run Docker commands without sudo.
 
+2. Start the full development environment:
+   ```sh
+   ./scripts/dev-clean-start.sh
+   ```
+   This builds the containers, starts CVAT, and installs the Nuclio/SAM serverless components.
 
-## Acknowledgement
-Special thanks to all the developers and maintainers of the [original CVAT tool](https://github.com/cvat-ai/cvat).
+3. Create an admin user:
+   ```sh
+   docker exec -it cvat_server bash -ic "python manage.py createsuperuser"
+   ```
+
+4. Open the app at http://localhost.
+
+## Acknowledgements
+
+Special thanks to all the developers and maintainers of the original CVAT tool.

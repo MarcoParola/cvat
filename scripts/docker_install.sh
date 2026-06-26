@@ -36,7 +36,8 @@ sudo systemctl enable --now containerd
 sudo systemctl enable --now docker
 
 echo "Installation finished."
-echo "Run 'newgrp docker' or log out/in to apply group membership changes."
+echo "Run 'newgrp docker' now (or log out/in) to apply the docker group membership changes."
+echo "This avoids needing sudo for docker commands in a new shell."
 docker --version || true
 docker compose version || true
 
