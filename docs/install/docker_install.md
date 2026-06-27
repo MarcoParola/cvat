@@ -31,27 +31,17 @@ newgrp docker
 
 docker --version        # Should show 26.0.0
 docker compose version  # Should show v2.x
-```
 
-```
 # Create the group if it doesn't exist
 sudo groupadd docker
 # Add your current user to the docker group
 sudo usermod -aG docker $USER
-```
 
-```
 # Unmask and enable containerd
 sudo systemctl unmask containerd
 sudo systemctl enable --now containerd
 # Enable and start Docker
 sudo systemctl enable --now docker
-```
 
-```
-sudo systemctl status docker
-```
-
-```
 newgrp docker
 ```
