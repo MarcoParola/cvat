@@ -3,7 +3,7 @@
 //
 // SPDX-License-Identifier: MIT
 
-import React from 'react';
+import React, { useState } from 'react';
 
 import Text from 'antd/lib/typography/Text';
 
@@ -11,6 +11,7 @@ import { StatesOrdering, Workspace } from 'reducers';
 import ObjectItemContainer from 'containers/annotation-page/standard-workspace/objects-side-bar/object-item';
 import { ObjectState } from 'cvat-core-wrapper';
 import ObjectListHeader from './objects-list-header';
+import SetParentModal from './set-parent-modal';
 
 interface Props {
     workspace: Workspace;
@@ -24,7 +25,12 @@ interface Props {
     switchLockAllShortcut: string;
     switchHiddenAllShortcut: string;
     showGroundTruth: boolean;
+    selectedStateIDs: number[];
     changeStatesOrdering(value: StatesOrdering): void;
+    selectAllStates(): void;
+    clearSelectedStates(): void;
+    changeStateSelection(clientID: number, selected: boolean): void;
+    updateObjectStates(objectStates: ObjectState[]): void;
     lockAllStates(): void;
     unlockAllStates(): void;
     collapseAllStates(): void;
@@ -47,7 +53,12 @@ function ObjectListComponent(props: Props): JSX.Element {
         switchLockAllShortcut,
         switchHiddenAllShortcut,
         showGroundTruth,
+        selectedStateIDs,
         changeStatesOrdering,
+        selectAllStates,
+        clearSelectedStates,
+        changeStateSelection,
+        updateObjectStates,
         lockAllStates,
         unlockAllStates,
         collapseAllStates,
@@ -56,6 +67,13 @@ function ObjectListComponent(props: Props): JSX.Element {
         showAllStates,
         changeShowGroundTruth,
     } = props;
+    const [setParentModalVisible, setSetParentModalVisible] = useState(false);
+    const selectedObjectStates = objectStates.filter(
+        (state: ObjectState) => selectedStateIDs.includes(state.clientID as number),
+    );
+    const selectableObjectStates = objectStates.filter((state: ObjectState) => !state.isGroundTruth);
+    const allStatesSelected = !!selectableObjectStates.length &&
+        selectedObjectStates.length === selectableObjectStates.length;
 
     let latestZOrder: number | null = null;
     return (
@@ -70,7 +88,13 @@ function ObjectListComponent(props: Props): JSX.Element {
                 switchHiddenAllShortcut={switchHiddenAllShortcut}
                 showGroundTruth={showGroundTruth}
                 count={objectStates.length}
+                selectableCount={selectableObjectStates.length}
+                selectedCount={selectedObjectStates.length}
+                allStatesSelected={allStatesSelected}
                 changeStatesOrdering={changeStatesOrdering}
+                selectAllStates={selectAllStates}
+                clearSelectedStates={clearSelectedStates}
+                setParentForSelectedStates={() => setSetParentModalVisible(true)}
                 lockAllStates={lockAllStates}
                 unlockAllStates={unlockAllStates}
                 collapseAllStates={collapseAllStates}
@@ -104,12 +128,26 @@ function ObjectListComponent(props: Props): JSX.Element {
                                     clientID={id}
                                     visibleSkeletonElements={visibleSkeletonElements}
                                     allowSimplifyLifecycle
+                                    selectionEnabled
+                                    selected={selectedStateIDs.includes(id)}
+                                    onSelectionChange={changeStateSelection}
                                 />
                             </React.Fragment>
                         );
                     },
                 )}
             </div>
+            {!!selectedObjectStates.length && (
+                <SetParentModal
+                    objectState={selectedObjectStates[0]}
+                    objectStates={selectedObjectStates}
+                    visible={setParentModalVisible}
+                    onClose={() => setSetParentModalVisible(false)}
+                    states={objectStates}
+                    updateObjectStates={updateObjectStates}
+                    jobInstance={null}
+                />
+            )}
         </>
     );
 }

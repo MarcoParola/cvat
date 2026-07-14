@@ -6,6 +6,7 @@
 import React, { useCallback, useState } from 'react';
 import Text from 'antd/lib/typography/Text';
 import Collapse from 'antd/lib/collapse';
+import Checkbox, { CheckboxChangeEvent } from 'antd/lib/checkbox';
 
 import ObjectButtonsContainer from 'containers/annotation-page/standard-workspace/objects-side-bar/object-buttons';
 import ItemDetailsContainer from 'containers/annotation-page/standard-workspace/objects-side-bar/object-item-details';
@@ -35,8 +36,11 @@ interface Props {
     states: any[];
     parentID: number | null;
     hierarchyLevel: number;
+    selected?: boolean;
+    selectionEnabled?: boolean;
     activate(activeElementID?: number): void;
     focusAndExpand(): void;
+    onSelectionChange?(clientID: number, selected: boolean): void;
     copy(): void;
     propagate(): void;
     switchOrientation(): void;
@@ -93,6 +97,9 @@ function ObjectItemComponent(props: Props): JSX.Element {
         objectState,
         states,
         hierarchyLevel = 0,
+        selected = false,
+        selectionEnabled = false,
+        onSelectionChange,
         updateState,
     } = props;
 
@@ -119,6 +126,10 @@ function ObjectItemComponent(props: Props): JSX.Element {
         setSetParentModalVisible(false);
     }, []);
 
+    const handleSelectionChange = useCallback((event: CheckboxChangeEvent) => {
+        onSelectionChange?.(clientID, event.target.checked);
+    }, [clientID, onSelectionChange]);
+
     // Calculate left padding for hierarchical indentation (16px per level)
     const indentationStyle = {
         paddingLeft: `${hierarchyLevel * 16}px`,
@@ -126,7 +137,18 @@ function ObjectItemComponent(props: Props): JSX.Element {
 
     return (
         <>
-            <div style={{ display: 'flex', marginBottom: '1px', ...indentationStyle }}>
+            <div
+                className='cvat-objects-sidebar-state-item-wrapper'
+                style={{ ...indentationStyle }}
+            >
+                {selectionEnabled && (
+                    <Checkbox
+                        checked={selected}
+                        disabled={isGroundTruth}
+                        onChange={handleSelectionChange}
+                        className='cvat-objects-sidebar-state-item-selector'
+                    />
+                )}
                 <div
                     onMouseEnter={activateState}
                     onDoubleClick={focusAndExpand}
@@ -208,6 +230,7 @@ function ObjectItemComponent(props: Props): JSX.Element {
                     onClose={handleCloseModal}
                     states={states}
                     updateObjectState={updateState}
+                    updateObjectStates={(updatedStates: any[]) => updatedStates.forEach(updateState)}
                     jobInstance={jobInstance}
                 />
             )}

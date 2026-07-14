@@ -320,6 +320,16 @@
     .cvat-objects-sidebar-show-ground-truth-active {
         color: #1890ff;
     }
+
+    .cvat-objects-sidebar-bulk-parent-active {
+        color: #1890ff;
+    }
+
+    .cvat-objects-sidebar-select-all {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
 }
 
 .cvat-objects-sidebar-states-list {
@@ -335,6 +345,18 @@
 
     .cvat-objects-sidebar-state-item-elements {
         background-color: rgba(var(--state-item-background), 0);
+    }
+}
+
+.cvat-objects-sidebar-state-item-wrapper {
+    display: flex;
+    align-items: flex-start;
+    gap: $grid-unit-size * 0.5;
+    margin-bottom: 1px;
+
+    .cvat-objects-sidebar-state-item-selector {
+        flex: 0 0 auto;
+        margin-top: $grid-unit-size;
     }
 }
 

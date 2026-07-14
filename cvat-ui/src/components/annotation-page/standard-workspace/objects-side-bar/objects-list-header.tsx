@@ -7,13 +7,16 @@ import React from 'react';
 import Icon, {
     CaretDownOutlined,
     CaretUpFilled,
+    CloseOutlined,
     EyeInvisibleFilled,
     EyeOutlined,
+    LinkOutlined,
     LockFilled,
     UnlockOutlined,
 } from '@ant-design/icons';
 import { Col, Row } from 'antd/lib/grid';
 import Text from 'antd/lib/typography/Text';
+import Checkbox from 'antd/lib/checkbox';
 
 import StatesOrderingSelector from 'components/annotation-page/standard-workspace/objects-side-bar/states-ordering-selector';
 import CVATTooltip from 'components/common/cvat-tooltip';
@@ -30,7 +33,13 @@ interface Props {
     switchHiddenAllShortcut: string;
     showGroundTruth: boolean;
     count: number;
+    selectableCount: number;
+    selectedCount: number;
+    allStatesSelected: boolean;
     changeStatesOrdering(value: StatesOrdering): void;
+    selectAllStates(): void;
+    clearSelectedStates(): void;
+    setParentForSelectedStates(): void;
     lockAllStates(): void;
     unlockAllStates(): void;
     collapseAllStates(): void;
@@ -38,6 +47,60 @@ interface Props {
     hideAllStates(): void;
     showAllStates(): void;
     changeShowGroundTruth(): void;
+}
+
+function SelectAllSwitcher(props: Props): JSX.Element {
+    const {
+        selectableCount, selectedCount, allStatesSelected, selectAllStates, clearSelectedStates,
+    } = props;
+    return (
+        <Col span={3}>
+            <CVATTooltip title={allStatesSelected ? 'Clear selected objects' : 'Select all objects'}>
+                <Checkbox
+                    disabled={!selectableCount}
+                    checked={allStatesSelected}
+                    indeterminate={selectedCount > 0 && !allStatesSelected}
+                    onChange={() => {
+                        if (allStatesSelected) {
+                            clearSelectedStates();
+                        } else {
+                            selectAllStates();
+                        }
+                    }}
+                    className='cvat-objects-sidebar-select-all'
+                />
+            </CVATTooltip>
+        </Col>
+    );
+}
+
+function SetParentForSelectedSwitcher(props: Props): JSX.Element {
+    const { selectedCount, setParentForSelectedStates } = props;
+    const tooltipTitle = selectedCount ?
+        `Set parent for ${selectedCount} selected objects` :
+        'Select objects to set parent';
+
+    return (
+        <Col span={3}>
+            <CVATTooltip title={tooltipTitle}>
+                <LinkOutlined
+                    className={selectedCount ? 'cvat-objects-sidebar-bulk-parent-active' : ''}
+                    onClick={selectedCount ? setParentForSelectedStates : undefined}
+                />
+            </CVATTooltip>
+        </Col>
+    );
+}
+
+function ClearSelectionSwitcher(props: Props): JSX.Element {
+    const { selectedCount, clearSelectedStates } = props;
+    return (
+        <Col span={3}>
+            <CVATTooltip title='Clear selected objects'>
+                <CloseOutlined onClick={selectedCount ? clearSelectedStates : undefined} />
+            </CVATTooltip>
+        </Col>
+    );
 }
 
 function LockAllSwitcher(props: Props): JSX.Element {
@@ -121,6 +184,9 @@ function ObjectListHeader(props: Props): JSX.Element {
                 </Col>
                 <Col span={24}>
                     <Row justify='space-around' align='middle'>
+                        <SelectAllSwitcher {...props} />
+                        <SetParentForSelectedSwitcher {...props} />
+                        <ClearSelectionSwitcher {...props} />
                         <LockAllSwitcher {...props} />
                         <HideAllSwitcher {...props} />
                         { workspace === Workspace.REVIEW && (

@@ -41,6 +41,9 @@ interface OwnProps {
     objectStates: ObjectState[];
     visibleSkeletonElements?: Record<number, number[]>;
     allowSimplifyLifecycle?: boolean;
+    selected?: boolean;
+    selectionEnabled?: boolean;
+    onSelectionChange?(clientID: number, selected: boolean): void;
 }
 
 interface StateToProps {
@@ -603,6 +606,9 @@ class ObjectItemContainer extends React.PureComponent<Props, State> {
             visibleSkeletonElements = {},
             hierarchyLevel,
             states,
+            selected,
+            selectionEnabled,
+            onSelectionChange,
         } = this.props;
         const elements = visibleSkeletonElements[objectState.clientID as number] ??
             objectState.elements.map((el: ObjectState) => el.clientID as number);
@@ -647,6 +653,9 @@ class ObjectItemContainer extends React.PureComponent<Props, State> {
                     states={states}
                     parentID={objectState.parentID}
                     hierarchyLevel={hierarchyLevel}
+                    selected={selected}
+                    selectionEnabled={selectionEnabled}
+                    onSelectionChange={onSelectionChange}
                     updateState={this.commit.bind(this)}
                 />
                 {simplifyMode && (

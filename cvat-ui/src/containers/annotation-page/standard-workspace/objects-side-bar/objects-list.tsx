@@ -387,6 +387,7 @@ interface State {
     objectStates: ObjectState[];
     filteredStates: ObjectState[];
     sortedStatesID: number[];
+    selectedStateIDs: number[];
 }
 
 class ObjectsListContainer extends React.PureComponent<Props, State> {
@@ -397,6 +398,7 @@ class ObjectsListContainer extends React.PureComponent<Props, State> {
             objectStates: [],
             filteredStates: [],
             sortedStatesID: [],
+            selectedStateIDs: [],
         };
     }
 
@@ -416,15 +418,19 @@ class ObjectsListContainer extends React.PureComponent<Props, State> {
         const {
             objectStates, frameNumber, workspace,
         } = this.props;
-        const { statesOrdering } = this.state;
+        const { statesOrdering, selectedStateIDs } = this.state;
         const filteredStates = filterAnnotations(objectStates, {
             frame: frameNumber,
             workspace,
         });
+        const visibleEditableStateIDs = new Set(filteredStates
+            .filter((state: ObjectState) => !state.isGroundTruth)
+            .map((state: ObjectState) => state.clientID));
         this.setState({
             objectStates,
             filteredStates,
             sortedStatesID: sortAndMap(filteredStates, statesOrdering),
+            selectedStateIDs: selectedStateIDs.filter((clientID: number) => visibleEditableStateIDs.has(clientID)),
         });
     };
 
@@ -458,6 +464,28 @@ class ObjectsListContainer extends React.PureComponent<Props, State> {
 
     private onShowAllStates = (): void => {
         this.hideAllStates(false);
+    };
+
+    private onSelectAllStates = (): void => {
+        const { filteredStates } = this.state;
+        this.setState({
+            selectedStateIDs: filteredStates
+                .filter((state: ObjectState) => !state.isGroundTruth)
+                .map((state: ObjectState) => state.clientID)
+                .filter((clientID): clientID is number => Number.isInteger(clientID)),
+        });
+    };
+
+    private onClearSelectedStates = (): void => {
+        this.setState({ selectedStateIDs: [] });
+    };
+
+    private onChangeStateSelection = (clientID: number, selected: boolean): void => {
+        this.setState(({ selectedStateIDs }) => ({
+            selectedStateIDs: selected ?
+                Array.from(new Set([...selectedStateIDs, clientID])) :
+                selectedStateIDs.filter((id: number) => id !== clientID),
+        }));
     };
 
     private changeShowGroundTruth = (): void => {
@@ -523,7 +551,7 @@ class ObjectsListContainer extends React.PureComponent<Props, State> {
             renderData,
         } = this.props;
         const {
-            objectStates, sortedStatesID, statesOrdering, filteredStates,
+            objectStates, sortedStatesID, statesOrdering, filteredStates, selectedStateIDs,
         } = this.state;
 
         const preventDefault = (event?: KeyboardEvent): void => {
@@ -737,7 +765,12 @@ class ObjectsListContainer extends React.PureComponent<Props, State> {
                     visibleSkeletonElements={renderData.visibleSkeletonElements}
                     switchHiddenAllShortcut={normalizedKeyMap.SWITCH_ALL_HIDDEN}
                     switchLockAllShortcut={normalizedKeyMap.SWITCH_ALL_LOCK}
+                    selectedStateIDs={selectedStateIDs}
                     changeStatesOrdering={this.onChangeStatesOrdering}
+                    selectAllStates={this.onSelectAllStates}
+                    clearSelectedStates={this.onClearSelectedStates}
+                    changeStateSelection={this.onChangeStateSelection}
+                    updateObjectStates={updateAnnotations}
                     lockAllStates={this.onLockAllStates}
                     unlockAllStates={this.onUnlockAllStates}
                     collapseAllStates={this.onCollapseAllStates}
