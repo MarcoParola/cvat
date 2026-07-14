@@ -1,0 +1,18 @@
+# Install HCVAT
+
+Use the repository scripts for the full setup flow:
+
+```sh
+./scripts/docker_install.sh
+./scripts/dev-clean-start.sh
+```
+
+The clean-start script also runs [scripts/install_nuclio_sam.sh](../../scripts/install_nuclio_sam.sh), which installs nuctl, starts the serverless stack, and deploys the SAM function.
+
+After the services are up, open http://localhost and create an admin user with:
+
+```sh
+docker exec -it cvat_server bash -ic "python manage.py createsuperuser"
+```
+
+To stop or remove the containers later, you can use the helper scripts in [scripts](../../scripts).
