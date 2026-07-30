@@ -20,7 +20,7 @@ spec:
   description: Interactive object segmentation with Segment-Anything
   runtime: 'python:3.10'
   handler: main:handler
-  eventTimeout: 30s
+  eventTimeout: 120s
   env:
     - name: PYTHONPATH
       value: /opt/nuclio/sam
