@@ -18,6 +18,14 @@ docker compose -f "$PROJECT_ROOT/docker-compose.yml" \
               -f "$PROJECT_ROOT/components/serverless/docker-compose.serverless.yml" \
               stop
 
+# Nuclio function containers (e.g. SAM) are created by the Nuclio dashboard,
+# not by docker compose, so they need to be stopped separately.
+NUCLIO_FUNCTIONS=$(docker ps -q --filter "label=nuclio.io/function-name")
+if [ -n "$NUCLIO_FUNCTIONS" ]; then
+    echo "Stopping Nuclio function containers..."
+    docker stop $NUCLIO_FUNCTIONS > /dev/null
+fi
+
 echo "✓ All services stopped"
 echo ""
 echo "To start again: ./scripts/dev-hot-reload.sh"
